@@ -1,0 +1,60 @@
+>>>> Input size (each party),10,
+chosen order: 
+52435875175126190479447740508185965837690552500527637822603658699938581184513
+generating random keys and signatures
+distributing input keys and signatures
+27e78e8fcf59897e2b958827d0b620ae6691f8f18960bde479ed1bd1f8142b419d11d2c722edf9c1584b21cb615841f57cc3c9969dcbcb9883502a626b75c99867739b5519f885bb97569dc4bd9d37344d540ac104984b2a0d4a9ba716e314fdf48855ecee06421ce67e261473ed3d8d2ce6e435b9e99c7734a5af24597c3f7d8a1aaf6f5f7ab18854149
+29ad1641b88a1ac6fc69bef190d5e86478b996c7478da69d7219069fd979fde2f47e02e87c1c6762885795872906f142c53aceb47798fed7ecc3feedeeca89fdee8ac96c56b5ee03ac3a6444ba5e77fd7142f613d148d21ad733ef56e226c2dfc8db5ebaac846ed9e944c04a5051dd97558cc1110d32671d48cf9939ae8a0d02255c5b8451f60d1c12c13c810
+3820df5abc4e49e751b618aabbe83c6eb4b575b186b99549a62f9ef1dca3ac27b7674c055e22c1a65d1c740c411262e1fd26e64316d0c35dc2175615e327391c17e8b2103a87f114ace1272ac5a132ef64c7e163e56a9476959a249632584218a5a8122a5f47316caaf6b818e5025fd67366cf7f8ae575a3d7efe99553b5ea73605e65186a4eb2829e3cc897479
+315b1caaa1dda67495e87ac9822d338f3698c71d37ca8e08170ce529e7b711d81f972ec466cd3c026395835da8bd0ba0ee2842d37f724aa4dbdc321f59f2eb9f6e8db253230c3b8108eedc3c687bb27f501e65752bf02d788716a24b3126cbe6d8ef7c1463a1118402070948f9a3a10fc977fd57bfbdf44b1abeb3b6560e2b874bf2ac731348d4247ffeeed
+20843ed8ebf7d5d0ecb7435775a1c859e329be932a63b74b4a46b12965ad2a0237cb6b3327151327c1c512b7aff0d358bce7d3cdc014f938f2bc63ba4e9a1831a9c24b13b9ffcf74270a9797899bb7f4f6d33e9f68e3291e1c3544e592137ef3cb26afce2a9979de8aac436c4499a6f8aabc5e7e8611ccf3797665daf81b973498447a91b03ededfa0d2b7
+3e51f783345284d4a2d1487485e0b7823e84f01b1f6d7129cb73dfc89e1aa351e254b881b745f8aea101f4af69ac6ac52f8af3a93ba689ba8e6f01e75b016985c27ae979ae92c46f3f98531a6f158d61de47a94ee8749e72d0261e5e1aaa294951b9fc6fbb69ccca253b54ccf5748e888235c9132a34ad0ec609ee9cb88178f4426dd8a4a198c56ec18eefe03b
+2ee3624d1810ffca98932dbd36e8fed7e05a1883dbc7ddfc7d9ba7d0e2a76bd2d8983592ec9ed2ab52524ade5529943faed46c9d53efd7fd0bdf61c8c20a7d8c0a3a73bb1f6a7cc375f90b9ef23c4758decf0fdccaddd8b6915fcbf5313e9967cce59c2645da5d9f313b8392a5c28dcd03188cf71e6c459a4c8447cafdabc5d8cad230f1fd4c6e4268e55b1
+37faad1d8af5e1731e1b9b59e816234efd79c158b8988b17e1b5c3694fe279cc70a660213f2962868b99233f171b6b691442ca26d3f1b9223b38fccaa0937b58e97c3a99d276d3638a2f31a4e61deacb6317278a58d2dd4aa31de38475f8b52193a1ec9664c40fd1099d9d3d4ac10131053d4acf56836e0694dbd66dc4c477f83d97c83824e30f2ba44885d4b172d
+2648df3d1112b87440d7136c7025c9d0dd2788498536dcdfe595e212cc197274c47df44c7861d69ee8b41e6ef8b93c1c0536d1689d9de816215edc4837812649842a2d6bdae0bda5c0f3ee99b7f0a7f0a487dd385a6917bdfb7fd221512f375a865b949fb7fe39512a8179b4f65fde2caceab78f819530a8be655d5389838a289b213fbc7ee8aac239a8f66
+217c9b8af415bceb4f077a63076598417c747faf842acc7056b33f26461d8bc7ce5d6fbcfbea63cfd118dbbf1c455fb44a23e9f65886f6da0af931014d98e30a47cc7eaab8978a012a36b92fe399cdce6f6bf9997d6e8dcf63deef44fe69e3046a48ffe6f74f9b63de36168c6a668d012833424bf325028f6b429a1b119eedd82acd124ba7d2bb496b14ffb16
+==========  Input generation done ============
+------ Input S_i , Pk_i , Ei, E'i ----------
+---- inputs shared ----0
+>>>> Input sharing,332.862, ms
+---- computing c1i and c2j ----0
+>>>> C1 C2 computation,56.8718, ms
+---- main loop ----0
+------  generate randoms ------
+------  opening 3 randoms ------
+>>>> Open 3 rands,85.6404, ms
+------  generate 100 randoms ------
+-- done --
+>>>> Generate INPUT**2 private rands,64.2052, ms
+-- computing c3 --
+>>>> C3 computation,21.8981, ms
+-- computing c4 --
+>>>> C4 computation,21.8846, ms
+-- private random * c4s --
+>>>> C4 * private rand computation,406.62, ms
+-- opening c4_rand --
+-- exchanging c4_rand complete --
+>>>> Open C4,11.1526, ms
+-- maccheck 1 --
+>>>> Mac check 1,230.326, ms
+------------- output ---------------
+217c9b8af415bceb4f077a63076598417c747faf842acc7056b33f26461d8bc7ce5d6fbcfbea63cfd118dbbf1c455fb44a23e9f65886f6da0af931014d98e30a47cc7eaab8978a012a36b92fe399cdce6f6bf9997d6e8dcf63deef44fe69e
+>>>> Open output,0.258526, ms
+-- maccheck 2 --
+>>>> Mac check 2,0.567222, ms
+-- end --
+>>>> Final time,1232.3, ms
+Broadcasting 0.08995 MB in 49 rounds, taking 0.0364106 seconds
+Exchanging one-to-one 23.2913 MB in 28 rounds, taking 0.625671 seconds
+Receiving directly 0.019124 MB in 8 rounds, taking 0.00175359 seconds
+Receiving one-to-one 8.16816 MB in 1 rounds, taking 1.08092 seconds
+Sending directly 0.009664 MB in 5 rounds, taking 0.00016626 seconds
+Sending one-to-one 8.16816 MB in 1 rounds, taking 1.13598 seconds
+Sending to all 0.00946 MB in 3 rounds, taking 4.4257e-05 seconds
+Sending/receiving 3.2e-05 MB in 2 rounds, taking 9.9237e-05 seconds
+
+SPDZ GT open counter: 2
+SPDZ G2 open counter: 1
+SPDZ G1 open counter: 0
+Significant amount of unused inverses of SPDZ gfp. For more accurate benchmarks, consider reducing the batch size with -b.
+SPDZ gfp open counter: 4
