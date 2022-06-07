@@ -55,7 +55,7 @@ Run the two parties:
 
 To use different hosts, edit the `pci_ip.txt` file. Then add the additional option  `-ip pci_ip.txt` to the above commands.
 
-For ECDSA use the executable `./mascot-bls-party.x`
+For ECDSA use the executable `./mascot-ecdsa-party.x`
 
 
 ----
