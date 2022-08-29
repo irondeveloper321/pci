@@ -192,6 +192,25 @@ void run(int argc, const char** argv)
             "-I", // Flag token.
             "--inputs" // Flag token.
     );
+    opt.add(
+            "", // Default.
+            0, // Required?
+            1, // Number of args expected.
+            0, // Delimiter if expecting multiple args.
+            "Number of Claims", // Help description.
+            "-K", // Flag token.
+            "--claims" // Flag token.
+    );
+    opt.add(
+            "", // Default.
+            0, // Required?
+            1, // Number of args expected.
+            0, // Delimiter if expecting multiple args.
+            "Intersection Size", // Help description.
+            "-O", // Flag token.
+            "--common" // Flag token.
+    );
+
     opt.parse(argc, argv);
     int INPUTSIZE = 10;
     if (opt.get("-I")->isSet){
@@ -200,14 +219,25 @@ void run(int argc, const char** argv)
     else {
         cout << "default input size 10" << endl;
     }
+
+    int CLAIMS = 1;
+    if (opt.get("-K")->isSet){
+        opt.get("-K")->getInt(CLAIMS);
+    }
+
     cout << ">>>> Input size (each party)," << INPUTSIZE << "," << endl;
+    cout << ">>>> Claims of each party," << CLAIMS << "," << endl;
+    int COMMON = 1;
+    if (opt.get("-O")->isSet){
+        opt.get("-O")->getInt(COMMON);
+    }
+    cout << ">>>> Common elements," << COMMON << "," << endl;
     
     thread_pool pool;
 
-    int COMMON = 1;
     int TOTAL_GENERATED_INPUTS = INPUTSIZE*2 - COMMON;
     int secondPlayerInputIdx = INPUTSIZE - COMMON;
-    OnlineOptions::singleton.batch_size = INPUTSIZE * 10;
+    OnlineOptions::singleton.batch_size = INPUTSIZE * 4;
 
     // Setup network with two players
     Names N(opt, argc, argv, 2);
@@ -235,10 +265,32 @@ void run(int argc, const char** argv)
     vector<PCIBLSInput> generatedinputsA;
     vector<PCIBLSInput> generatedinputsB;
     ClearInput<PCIBLSInput> clearInput(P);
-    uint8_t message11[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // claim of p1
-    uint8_t message12[10] = { 0, 1, 2, 23, 4, 5, 6, 7, 18, 19}; // claim of p1
-    uint8_t message21[10] = { 10, 12, 7, 3, 4, 5, 16, 7, 8, 9}; // claim of p2
-    uint8_t message22[10] = { 10, 12, 7, 43, 4, 55, 16, 17, 8, 9}; // claim of p2
+    
+    int claimc1 = CLAIMS;
+    int claimc2 = CLAIMS;
+    int msglen = 10;
+
+    uint8_t** messagep1 = new uint8_t*[claimc1];
+    uint8_t** messagep2 = new uint8_t*[claimc2];
+
+    for (int i = 0; i < claimc1; i++)
+    {
+            messagep1[i] = new uint8_t[msglen];
+            for (int j = 0; j < msglen; j++)
+            {
+                messagep1[i][j] = rand() % 100;
+            }
+            
+    }
+    for (int i = 0; i < claimc2; i++)
+    {
+            messagep2[i] = new uint8_t[msglen];
+            for (int j = 0; j < msglen; j++)
+            {
+                messagep2[i][j] = rand() % 100;
+            }
+    }
+
 
     SeededPRNG G;
     if (P.my_num() == 0){
@@ -255,19 +307,26 @@ void run(int argc, const char** argv)
             G2Element Pk(sk);
 
             // sign1
-            signature1 = G1Element::sign(message11, sizeof(message11), sk);
-            assert(G1Element::ver(signature1, message11, sizeof(message11), Pk) == true);
-            signature2 = G1Element::sign(message12, sizeof(message12), sk);
-            assert(G1Element::ver(signature2, message12, sizeof(message12), Pk) == true);
-            signature1 = signature1 + signature2;
+
+            signature1 = G1Element::sign(messagep1[0], msglen, sk);
+            assert(G1Element::ver(signature1, messagep1[0], msglen, Pk) == true);
+            for (int j = 1; j < claimc1; j++)
+            {
+                signature2 = G1Element::sign(messagep1[j], msglen, sk);
+                assert(G1Element::ver(signature2, messagep1[j], msglen, Pk) == true);
+                signature1 = signature1 + signature2;
+            }
             generatedinputsA.push_back({Pk, signature1});
 
             // sign2
-            signature1 = G1Element::sign(message21, sizeof(message21), sk);
-            assert(G1Element::ver(signature1, message21, sizeof(message21), Pk) == true);
-            signature2 = G1Element::sign(message22, sizeof(message22), sk);
-            assert(G1Element::ver(signature2, message22, sizeof(message22), Pk) == true);
-            signature1 = signature1 + signature2;
+            signature1 = G1Element::sign(messagep2[0], msglen, sk);
+            assert(G1Element::ver(signature1, messagep2[0], msglen, Pk) == true);
+            for (int j = 1; j < claimc2; j++)
+            {
+                signature2 = G1Element::sign(messagep2[j], msglen, sk);
+                assert(G1Element::ver(signature2, messagep2[j], msglen, Pk) == true);
+                signature1 = signature1 + signature2;
+            }
             generatedinputsB.push_back({Pk, signature1});
 
         }
@@ -280,11 +339,18 @@ void run(int argc, const char** argv)
             cout << pciinputs[i].Pk << pciinputs[i].signature << endl;
         }
 
+        // free unused vector
+        vector<PCIBLSInput>().swap(generatedinputsA);
+
 
         clearInput.reset_all();
         for (int i = secondPlayerInputIdx; i < TOTAL_GENERATED_INPUTS; i++){
             clearInput.add_mine(generatedinputsB[i]);
         }
+
+        // free unused vector
+        vector<PCIBLSInput>().swap(generatedinputsB);
+
         clearInput.exchange();
     }
 
@@ -305,8 +371,20 @@ void run(int argc, const char** argv)
     // Parties compute E and E' sets
     vector<GtElement> E_set;
     vector<GtElement> E_set_;
-    G1Element m1combined = msg_to_g1(message11, sizeof(message11)) + msg_to_g1(message12, sizeof(message12));
-    G1Element m2combined = msg_to_g1(message21, sizeof(message21)) + msg_to_g1(message22, sizeof(message22));
+
+
+    G1Element m1combined = msg_to_g1(messagep1[0], msglen);
+    for (int j = 1; j < claimc1; j++)
+    {
+        m1combined += msg_to_g1(messagep1[j], msglen);
+    }
+    
+    G1Element m2combined = msg_to_g1(messagep2[0], msglen);
+    for (int j = 1; j < claimc2; j++)
+    {
+        m2combined += msg_to_g1(messagep2[j], msglen);
+    }
+
 
     if (P.my_num() == 0){
         for (int i = 0; i < INPUTSIZE; i++){
@@ -354,7 +432,7 @@ void run(int argc, const char** argv)
     typename scalarShare::mac_key_type mac_key;
     scalarShare::read_or_generate_mac_key("", P, mac_key);
 
-    typename scalarShare::Direct_MC output(mac_key);
+    typename scalarShare::Direct_MC output(&pool, mac_key);
 
     typename scalarShare::LivePrep preprocessing(0, usage);
     
@@ -371,7 +449,7 @@ void run(int argc, const char** argv)
     typename g1Share::mac_key_type g1_mac_key;
     g1Share::read_or_generate_mac_key("", P, g1_mac_key);
 
-    typename g1Share::Direct_MC g1_output(output.get_alphai());
+    typename g1Share::Direct_MC g1_output(&pool, output.get_alphai());
     
     typename g1Share::Input g1_input(g1_output, g1_preprocessing, P);
 
@@ -403,7 +481,7 @@ void run(int argc, const char** argv)
     gtShare::read_or_generate_mac_key("", P, gt_mac_key);
 
 
-    typename gtShare::Direct_MC gt_output(output.get_alphai());
+    typename gtShare::Direct_MC gt_output(&pool, output.get_alphai());
     
 
     typename gtShare::Input gt_input(gt_output, gt_preprocessing, P);
@@ -432,6 +510,12 @@ void run(int argc, const char** argv)
         gt_input.add_from_all(E_set[i]);
         gt_input.add_from_all(E_set_[i]);
     }
+
+    // free unused vector
+    vector<GtElement>().swap(E_set);
+    vector<GtElement>().swap(E_set_);
+    vector<PCIBLSInput>().swap(pciinputs);
+
     g1_input.exchange();
     g2_input.exchange();
     gt_input.exchange();
@@ -473,6 +557,9 @@ void run(int argc, const char** argv)
         tmp = tmp - E_share[1][i];
         c2.push_back(tmp);
     }
+    vector<g1Share>().swap(S_share[0]);
+    vector<g1Share>().swap(S_share[1]);
+
 
     vector<gtShare> c3;
     vector<gtShare> c4;
@@ -500,6 +587,12 @@ void run(int argc, const char** argv)
     for (int i = 0; i < 3; i++){
         output.prepare_open(to_open_rands[i]);
     }
+
+
+    // free unused vector
+    vector<scalarShare>().swap(to_open_rands);
+
+
     output.exchange(P);
     for (int i = 0; i < 3; i++){
         open_rands.push_back(output.finalize_open());
@@ -511,6 +604,7 @@ void run(int argc, const char** argv)
 
 
     cout << "------  generate " << (INPUTSIZE * INPUTSIZE) << " randoms ------" << endl;
+    OnlineOptions::singleton.batch_size = INPUTSIZE * INPUTSIZE;
 
     for (int i = 0; i < INPUTSIZE; i++){
         for (int j = 0; j < INPUTSIZE; j++){
@@ -531,20 +625,19 @@ void run(int argc, const char** argv)
     for (int i = 0; i < INPUTSIZE; i++)
     {
         for (int j = 0; j < INPUTSIZE; j++){
-            gtShare e01 = E_share[0][i];
-            gtShare e_1j = E_share_[1][j];
-            gtShare e1j = E_share[1][j];
-            gtShare e_01 = E_share_[0][i];
-            GtElement::Scalar or0 = open_rands[0];
-
-            pool.push_task([&c3, e01, e_1j, e1j, e_01, or0, i,j, INPUTSIZE]{
-                c3[i*INPUTSIZE + j] = (e01 - e_1j) + exp_gt_scalar((e1j - e_01), or0);
+            pool.push_task([&c3, &E_share, &E_share_, &open_rands, i,j, INPUTSIZE]{
+                c3[i*INPUTSIZE + j] = (E_share[0][i] - E_share_[1][j]) + exp_gt_scalar((E_share[1][j] - E_share_[0][i]), open_rands[0]);
                 });
-                // c3[i*INPUTSIZE + j] = (E_share[0][i] - E_share_[1][j]) + exp_gt_scalar((E_share[1][j] - E_share_[0][i]), open_rands[0]);
+                // c3[i*INPUTSIZE + j] = (e01 - e_1j) + exp_gt_scalar((e1j - e_01), or0);
 
         }
     }
     pool.wait_for_tasks();
+
+    vector<gtShare>().swap(E_share[0]);
+    vector<gtShare>().swap(E_share[1]);
+    vector<gtShare>().swap(E_share_[0]);
+    vector<gtShare>().swap(E_share_[1]);
 
     auto tc3 = timer.elapsed();
     cout << ">>>> C3 computation," << (tc3 - tprand) * 1e3 << ", ms" << endl;
@@ -554,19 +647,19 @@ void run(int argc, const char** argv)
     for (int i = 0; i < INPUTSIZE; i++)
     {
         for (int j = 0; j < INPUTSIZE; j++){
-            gtShare c3item = c3[(INPUTSIZE*i) + j];
-            gtShare c1item = c1[i];
-            gtShare c2item = c2[j];
-            GtElement::Scalar or1 = open_rands[1];
-            GtElement::Scalar or2 = open_rands[2];
-            pool.push_task([&c4, c1item, c2item, c3item, or1, or2, open_rands, i,j, INPUTSIZE]{
-                c4[(INPUTSIZE*i) + j] = c3item + exp_gt_scalar(c1item, or1) + exp_gt_scalar(c2item, or2);
+            pool.push_task([&c4, &c1, &c2, &c3, &open_rands, i,j, INPUTSIZE]{
+                    c4[(INPUTSIZE*i) + j] = c3[(INPUTSIZE*i) + j] + exp_gt_scalar(c1[i], open_rands[1]) + exp_gt_scalar(c2[j], open_rands[2]);
                 });
-                // c4[(INPUTSIZE*i) + j] = c3[(INPUTSIZE*i) + j] + exp_gt_scalar(c1[i], open_rands[1]) + exp_gt_scalar(c2[j], open_rands[2]);
-
+                // c4[(INPUTSIZE*i) + j] = c3item + exp_gt_scalar(c1item, or1) + exp_gt_scalar(c2item, or2);
         }
     }
     pool.wait_for_tasks();
+
+    // free unused vector
+    vector<GtElement::Scalar>().swap(open_rands);
+    vector<gtShare>().swap(c1);
+    vector<gtShare>().swap(c2);
+    vector<gtShare>().swap(c3);
 
 
     auto tc4 = timer.elapsed();
@@ -575,14 +668,22 @@ void run(int argc, const char** argv)
 
     cout << "-- private random * c4s --" << endl;
     gtprotocol.init_mul();
-    for (int i = 0; i < INPUTSIZE; i++)
-    {
-        for (int j = 0; j < INPUTSIZE; j++){
-            gtprotocol.prepare_scalar_mul(myrandomshares[(INPUTSIZE*i) + j], c4[(INPUTSIZE*i) + j]);
-        }
-    }
+    // for (int i = 0; i < INPUTSIZE; i++)
+    // {
+    //     for (int j = 0; j < INPUTSIZE; j++){
+    //         gtprotocol.prepare_scalar_mul(myrandomshares[(INPUTSIZE*i) + j], c4[(INPUTSIZE*i) + j]);
+    //     }
+    // }
+    gtprotocol.prepare_scalar_mul_parallel(pool, myrandomshares, c4, INPUTSIZE * INPUTSIZE);
+
+
+    // free unused vector
+    vector<scalarShare>().swap(myrandomshares);
+    vector<gtShare>().swap(c4);
+
     gtprotocol.exchange();
     gtprotocol.finalize_mul(INPUTSIZE*INPUTSIZE, pool, c4_rand);
+    gtprotocol.init_mul();
 
     auto tc4_rand = timer.elapsed();
     cout << ">>>> C4 * private rand computation," << (tc4_rand - tc4) * 1e3 << ", ms" << endl;
@@ -600,6 +701,10 @@ void run(int argc, const char** argv)
             gt_output.prepare_open(c4_rand[(INPUTSIZE*i) + j]);
         }
     }
+
+    // free unused vector
+    vector<gtShare>().swap(c4_rand);
+
     gt_output.exchange(P);
     cout << "-- exchanging c4_rand complete --" << endl;
 

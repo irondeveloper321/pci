@@ -37,11 +37,12 @@ void EcBeaver<T, V>::init_mul()
     assert(this->prep);
     assert(this->MCec);
     assert(this->MCscalar);
-    sharesEc.clear();
-    sharesScalar.clear();
-    openedEc.clear();
-    openedScalar.clear();
-    triples.clear();
+
+    vector<T>().swap(sharesEc);
+    vector<V>().swap(sharesScalar);
+    vector<typename T::open_type>().swap(openedEc);
+    vector<typename V::open_type>().swap(openedScalar);
+    vector<array<V, 3>>().swap(triples);
 }
 
 template<class T, class V>
@@ -63,6 +64,30 @@ void EcBeaver<T, V>::prepare_scalar_mul(const V& x, const T& Y, int n)
     triple = prep->get_triple(n);
     sharesScalar.push_back(x - triple[0]);
     sharesEc.push_back(Y - triple[1]);
+}
+
+
+template<class T, class V>
+void EcBeaver<T, V>::prepare_scalar_mul_parallel(thread_pool &pool, const vector<V>& x, const vector<T>& Y, int inputsize, int n)
+{
+    (void) n;
+    sharesScalar.resize(inputsize);
+    sharesEc.resize(inputsize);
+
+    for (int i = 0; i < inputsize; i++){
+        triples.push_back({{}});
+        auto& triple = triples.back();
+        triple = prep->get_triple(n);
+        auto sharesScalarHere = &sharesScalar[i];
+        auto sharesEcHere = &sharesEc[i];
+
+        pool.push_task([triple, sharesScalarHere, sharesEcHere, &x, &Y, i]{
+            *sharesScalarHere = x[i] - triple[0];
+            *sharesEcHere = Y[i] - triple[1];
+        });
+    }
+
+    pool.wait_for_tasks();
 }
 
 // [a]<G>
@@ -138,26 +163,24 @@ void EcBeaver<T, V>::finalize_mul(int count, thread_pool &pool, vector<T>& resve
 {
     resvec.resize(count);
     auto mynum_ = P.my_num();
+    auto alphai = MCec->get_alphai();
+    
     for (int i = 0; i < count; i++)
     {
-        typename V::open_type maskedScalar; // epsilon
-        typename T::open_type maskedEc; // D
 
-        V& a = (*triple)[0];
-        T C = (*triple)[2];
-        T B = (*triple)[1];
-        maskedScalar = *itScalar;
-        maskedEc = *itEc;
-        auto alphai = MCec->get_alphai();
+        auto triplet = triple;
 
-        pool.push_task([&resvec, i, maskedScalar, B, C, a, maskedEc, mynum_, alphai]{
-            T tmpres = C;
+        auto maskedScalar = itScalar;
+        auto maskedEc = itEc;
+
+        pool.push_task([&resvec, i, maskedScalar, triplet, maskedEc, mynum_, alphai]{
+            T tmpres = (*triplet)[2];
             T tmpec = {};
-            ecscalarmulshare(maskedScalar, B, tmpec);
+            ecscalarmulshare(*maskedScalar, (*triplet)[1], tmpec);
             tmpres += tmpec;
-            ecscalarmulshare(a, maskedEc, tmpec);
+            ecscalarmulshare((*triplet)[0], *maskedEc, tmpec);
             tmpres += tmpec;
-            tmpres += T::constant(maskedEc * maskedScalar, mynum_, alphai);
+            tmpres += T::constant(*maskedEc * *maskedScalar, mynum_, alphai);
             resvec[i] = tmpres;
         });
 
